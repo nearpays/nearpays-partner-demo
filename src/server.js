@@ -8,6 +8,16 @@ import { dashboardPage, signInPage } from './views.js';
 
 const app = express();
 
+// One address only: the session cookie belongs to one host, and the redirect
+// URI to another (localhost vs 127.0.0.1) would come back signed out.
+const appHost = new URL(config.appUrl).host;
+app.use((req, res, next) => {
+  if (req.headers.host && req.headers.host !== appHost && !req.path.startsWith(config.webhookPath)) {
+    return res.redirect(302, config.appUrl + req.originalUrl);
+  }
+  next();
+});
+
 // ── Records this app keeps for itself ───────────────────────────────────────
 // Your app would use its own database tables for these.
 const save = (kind, record) => store.set(`app:${kind}:${record.userId ?? 'all'}:${record.id}`, JSON.stringify(record));
@@ -126,7 +136,7 @@ app.get(config.redirectPath, requireUser, async (req, res) => {
     );
     flash(req.user, true, 'Nearpays connected.');
   } catch (error) {
-    flash(req.user, false, explain(error));
+    flash(req.user, false, error instanceof NearpaysError ? explain(error) : error.message);
   }
   res.redirect('/');
 });

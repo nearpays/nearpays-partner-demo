@@ -136,6 +136,12 @@ on every change.
    account, enter the code it emails you, review what Partner Demo asks for,
    and approve with your transaction PIN. You come back connected, with your
    balance showing.
+
+   No staging account of your own? Use one of the shared test customers
+   (`ada.test@example.com`, `tunde.test@example.com`,
+   `chioma.test@example.com`). Nearpays sends their password, PIN and the
+   fixed code they take instead of an emailed one with your staging
+   `client_id`. See *Testing on staging* in the partner guide at `/partners`.
 3. **Pay ₦500 now.** The charge lands in the business account you registered.
    Press **Retry** on any invoice to see idempotency: the same invoice id is
    sent as the reference, and Nearpays returns the first result instead of
