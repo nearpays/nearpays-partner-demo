@@ -35,6 +35,9 @@ function layout(title, body, user) {
   button, .button { appearance:none; border:0; border-radius:10px; padding:10px 14px; font:inherit; font-weight:600; cursor:pointer; background:var(--accent); color:#fff; text-decoration:none; display:inline-block }
   button.ghost { background:transparent; color:var(--fg); border:1px solid var(--line) } button.small { padding:6px 10px; font-size:13px }
   button:disabled { opacity:.45; cursor:not-allowed }
+  button.busy { opacity:1; cursor:progress; display:inline-flex; align-items:center; gap:8px }
+  button.busy::before { content:""; width:14px; height:14px; border-radius:50%; border:2px solid currentColor; border-right-color:transparent; animation:spin .7s linear infinite }
+  @keyframes spin { to { transform:rotate(360deg) } }
   input, select { font:inherit; padding:9px 11px; border:1px solid var(--line); border-radius:10px; background:var(--bg); color:var(--fg); min-width:0 }
   form.inline { display:flex; gap:8px; flex-wrap:wrap } form.inline input { flex:1 1 120px }
   table { width:100%; border-collapse:collapse; font-size:14px } td, th { text-align:left; padding:8px 4px; border-top:1px solid var(--line); vertical-align:top } th { color:var(--muted); font-weight:600; font-size:12.5px }
@@ -49,7 +52,22 @@ function layout(title, body, user) {
 <header><div class="bar"><div class="logo">P</div><div class="brand">Partner Demo</div><div class="spacer"></div>
 ${user ? `<span class="who">${esc(user.name)}</span><form method="post" action="/sign-out"><button class="ghost small">Sign out</button></form>` : ''}
 </div></header>
-<main>${body}</main></body></html>`;
+<main>${body}</main>
+<script>
+  // While a form is being handled, show it on the button pressed and lock
+  // every button, so nothing is sent twice. Payments can take a few seconds.
+  document.addEventListener('submit', (event) => {
+    const button = event.submitter || event.target.querySelector('button');
+    document.querySelectorAll('button').forEach((b) => { b.disabled = true; });
+    if (button) {
+      button.classList.add('busy');
+      if (button.dataset.busy) button.textContent = button.dataset.busy;
+    }
+  });
+  // Coming back with the browser's Back button restores a page from memory:
+  // unlock it.
+  window.addEventListener('pageshow', (event) => { if (event.persisted) location.reload(); });
+</script></body></html>`;
 }
 
 export function signInPage(users) {
@@ -73,17 +91,17 @@ export function dashboardPage({ user, flash, connection, balance, invoices, topu
           ? `<div class="big">${esc(naira(balance.balance))}</div><p class="muted">Wallet balance${balance.locked && Number(balance.locked) ? `, ${esc(naira(balance.locked))} on hold` : ''}</p>`
           : `<p class="muted">Balance unavailable right now.</p>`}
         <ul class="plain">${(connection.scopes ?? []).map((s) => `<li><code>${esc(s)}</code></li>`).join('')}</ul>
-        <form method="post" action="/disconnect" style="margin-top:14px"><button class="ghost">Disconnect Nearpays</button></form></div>`
+        <form method="post" action="/disconnect" style="margin-top:14px"><button class="ghost" data-busy="Disconnecting…">Disconnect Nearpays</button></form></div>`
     : `<div class="card"><h2>Nearpays</h2>
         <p class="sub">Connect your Nearpays wallet to pay invoices and buy airtime from it. You'll approve once, on Nearpays, with your PIN.</p>
         <ul class="plain"><li>Charges up to ₦5,000 a payment, ₦20,000 a day</li><li>Airtime and data up to ₦2,000 a payment</li><li>See your balance and email</li></ul>
-        <form method="post" action="/connect" style="margin-top:14px"><button>Connect Nearpays</button></form></div>`;
+        <form method="post" action="/connect" style="margin-top:14px"><button data-busy="Opening Nearpays…">Connect Nearpays</button></form></div>`;
 
   const disabled = connection ? '' : 'disabled';
   const invoiceRows = invoices.length
     ? `<table><tr><th>Invoice</th><th>Amount</th><th>Status</th><th></th></tr>${invoices
         .map((i) => `<tr><td><code>${esc(i.id)}</code><div class="muted">${esc(when(i.createdAt))}</div></td><td>${esc(naira(i.amount))}</td><td>${pill(i.status)}${i.error ? `<div class="muted">${esc(i.error)}</div>` : ''}</td>
-          <td>${i.status !== 'PAID' ? `<form method="post" action="/invoices/${esc(i.id)}/pay"><button class="small ghost" ${disabled}>${i.status === 'UNPAID' ? 'Pay' : 'Retry'}</button></form>` : ''}</td></tr>`)
+          <td>${i.status !== 'PAID' ? `<form method="post" action="/invoices/${esc(i.id)}/pay"><button class="small ghost" data-busy="Paying…" ${disabled}>${i.status === 'UNPAID' ? 'Pay' : 'Retry'}</button></form>` : ''}</td></tr>`)
         .join('')}</table>`
     : '<p class="empty">No invoices yet.</p>';
 
@@ -104,7 +122,7 @@ export function dashboardPage({ user, flash, connection, balance, invoices, topu
     `${flashBox}
     <div class="grid">${nearpaysCard}
       <div class="card"><h2>Pro plan</h2><p class="sub">₦500 a month, paid from your Nearpays wallet.</p>
-        <form method="post" action="/invoices"><button ${disabled}>Pay ₦500 now</button></form>
+        <form method="post" action="/invoices"><button data-busy="Paying ₦500…" ${disabled}>Pay ₦500 now</button></form>
         <div style="margin-top:14px">${invoiceRows}</div></div>
     </div>
     <div class="card"><h2>Buy airtime</h2><p class="sub">Paid from your Nearpays wallet, within the limits you approved.</p>
@@ -112,7 +130,7 @@ export function dashboardPage({ user, flash, connection, balance, invoices, topu
         <select name="network"><option>MTN</option><option>Airtel</option><option>Glo</option><option>9mobile</option></select>
         <input name="phone" placeholder="Phone number" required inputmode="tel" value="08030000000">
         <input name="amount" placeholder="Amount (₦)" required inputmode="numeric" value="100">
-        <button ${disabled}>Buy airtime</button>
+        <button data-busy="Buying airtime…" ${disabled}>Buy airtime</button>
       </form>
       <div style="margin-top:14px">${topupRows}</div></div>
     <div class="card"><h2>Webhooks</h2><p class="sub">Signed events Nearpays sent to <code>/nearpays/webhooks</code>, newest first.</p>${eventRows}</div>`,

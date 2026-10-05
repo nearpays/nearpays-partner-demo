@@ -1,4 +1,5 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 
 /**
  * Demo sign-in. Your app has its own users and login; here you just pick one
@@ -11,8 +12,13 @@ export const USERS = {
 };
 
 // Signs the cookie so it can't be edited to impersonate the other user.
-// A new secret each start signs everyone out, which is fine for a demo.
-const SECRET = randomBytes(32);
+// Kept in data/ (git-ignored) so a restart doesn't sign everyone out.
+const SECRET_FILE = 'data/session-secret';
+if (!existsSync(SECRET_FILE)) {
+  mkdirSync('data', { recursive: true });
+  writeFileSync(SECRET_FILE, randomBytes(32).toString('hex'), { mode: 0o600 });
+}
+const SECRET = readFileSync(SECRET_FILE, 'utf8');
 const COOKIE = 'demo_user';
 
 const sign = (value) => createHmac('sha256', SECRET).update(value).digest('base64url');
