@@ -1,0 +1,21 @@
+{
+  "name": "nearpays-partner-demo",
+  "version": "1.0.0",
+  "description": "A small partner website that connects customers' Nearpays accounts with @nearpays/partner: charges, airtime, webhooks.",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "keygen": "nearpays-partner keygen --out .keys"
+  },
+  "dependencies": {
+    "@nearpays/partner": "^0.1.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2"
+  }
+}
