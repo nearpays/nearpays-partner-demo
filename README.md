@@ -139,9 +139,9 @@ on every change.
 
    No staging account of your own? Use one of the shared test customers
    (`ada.test@example.com`, `tunde.test@example.com`,
-   `chioma.test@example.com`). Nearpays sends their password, PIN and the
-   fixed code they take instead of an emailed one with your staging
-   `client_id`. See *Testing on staging* in the partner guide at `/partners`.
+   `chioma.test@example.com`), with the password `Password@1234`, the code
+   `123456` where Nearpays would email one, and the PIN `1234`. Staging
+   only; see *Testing on staging* in the partner guide at `/partners`.
 3. **Pay ₦500 now.** The charge lands in the business account you registered.
    Press **Retry** on any invoice to see idempotency: the same invoice id is
    sent as the reference, and Nearpays returns the first result instead of
