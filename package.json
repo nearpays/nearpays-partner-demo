@@ -14,7 +14,7 @@
     "keygen": "nearpays-partner keygen --out .keys"
   },
   "dependencies": {
-    "@nearpays/partner": "^0.1.0",
+    "@nearpays/partner": "^0.2.0",
     "dotenv": "^16.4.5",
     "express": "^4.21.2"
   }
