@@ -128,10 +128,11 @@ export function dashboardPage({ user, flash, connection, balance, invoices, topu
     <div class="card"><h2>Buy airtime</h2><p class="sub">Paid from your Nearpays wallet, within the limits you approved.</p>
       <form class="inline" method="post" action="/airtime">
         <select name="network"><option>MTN</option><option>Airtel</option><option>Glo</option><option>9mobile</option></select>
-        <input name="phone" placeholder="Phone number" required inputmode="tel" value="08030000000">
+        <input name="phone" placeholder="Phone number" required inputmode="tel" value="+2348000000001">
         <input name="amount" placeholder="Amount (₦)" required inputmode="numeric" value="100">
         <button data-busy="Buying airtime…" ${disabled}>Buy airtime</button>
       </form>
+      <p class="sub" style="margin-top:10px">On staging, <code>+2348000000001</code> completes at once, <code>…0002</code> stays pending for about 15 seconds, and <code>…0003</code> fails and is refunded. Any network.</p>
       <div style="margin-top:14px">${topupRows}</div></div>
     <div class="card"><h2>Webhooks</h2><p class="sub">Signed events Nearpays sent to <code>/nearpays/webhooks</code>, newest first.</p>${eventRows}</div>`,
     user,

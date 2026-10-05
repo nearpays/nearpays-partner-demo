@@ -32,6 +32,7 @@ function explain(error) {
     }
     if (error.code === 'mandate_unavailable') return 'Payments from Nearpays are paused for this connection. Resume them in the Nearpays app.';
     if (error.code === 'access_denied') return 'You declined the connection on Nearpays.';
+    if (error.code === 'timeout') return 'Nearpays is taking a while. This updates when it confirms; paying again never charges twice.';
     return error.message;
   }
   return 'Something went wrong. Please try again.';
@@ -170,7 +171,10 @@ async function pay(user, invoice) {
     await save('invoice', { ...invoice, status, chargeId: charge.id, error: null });
     flash(user, true, charge.replayed ? `${invoice.id} was already paid; nothing was charged twice.` : `Paid ${invoice.id}.`);
   } catch (error) {
-    await save('invoice', { ...invoice, status: 'FAILED', error: explain(error) });
+    // A timeout isn't a failure: the charge may still go through, and the
+    // webhook will say. Paying again sends the same reference.
+    const status = error.code === 'timeout' ? 'PROCESSING' : 'FAILED';
+    await save('invoice', { ...invoice, status, error: explain(error) });
     flash(user, false, explain(error));
   }
 }
@@ -181,7 +185,8 @@ app.post('/airtime', requireUser, async (req, res) => {
     id: `top_${randomUUID().slice(0, 8)}`,
     userId: req.user.id,
     network: req.body.network,
-    phone: req.body.phone,
+    // Nearpays takes phone numbers in +234 form.
+    phone: String(req.body.phone ?? '').trim().replace(/^0(?=\d{10}$)/, '+234'),
     amount: String(Number(req.body.amount) || 0),
     status: 'PROCESSING',
     createdAt: new Date().toISOString(),
@@ -203,7 +208,13 @@ app.post('/airtime', requireUser, async (req, res) => {
       payment.status === 'PENDING' ? 'Top-up sent. Waiting for the network to confirm.' : `Top-up ${payment.status.toLowerCase()}.`,
     );
   } catch (error) {
-    await save('topup', { ...topup, status: 'FAILED', error: explain(error) });
+    // A timeout isn't a failure: the top-up may still go through, and the
+    // webhook will say.
+    const status = error.code === 'timeout' ? 'PROCESSING' : 'FAILED';
+    // Webhooks can arrive before this answer does; keep what they settled.
+    const latest = (await find('topup', topup.userId, topup.id)) ?? topup;
+    const settled = ['COMPLETED', 'REFUNDED'].includes(latest.status);
+    await save('topup', { ...latest, status: settled ? latest.status : status, error: explain(error) });
     flash(req.user, false, explain(error));
   }
   res.redirect('/');

@@ -140,8 +140,17 @@ on every change.
    Press **Retry** on any invoice to see idempotency: the same invoice id is
    sent as the reference, and Nearpays returns the first result instead of
    charging again.
-4. **Buy airtime.** Usually `PENDING` at first; a `bill.completed` (or
-   `bill.refunded`) webhook updates it.
+4. **Buy airtime.** On staging these numbers skip the real network, with
+   any provider selected:
+
+   | Number | What happens |
+   |---|---|
+   | `+2348000000001` | `COMPLETED` at once |
+   | `+2348000000002` | `PENDING`, then a `bill.completed` webhook about 15 seconds later |
+   | `+2348000000003` | Fails, and the wallet is refunded (`bill.refunded`) |
+
+   Numbers starting `0` are sent in `+234` form. If Nearpays takes too long,
+   the top-up stays processing rather than failing: the webhook settles it.
 5. **Go over a limit**, for example by paying more than 5 invoices in a day.
    The refusal says what's left today and this month.
 6. **Disconnect**, here or in Nearpays → Security → Connected apps. Either way
